@@ -1,6 +1,4 @@
-import { useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { format, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,57 +8,11 @@ import { Info } from 'lucide-react';
 
 export default function PayslipViewModal({ payslip, company, onClose }: { payslip: any, company: any, onClose: () => void }) {
   const componentRef = useRef<HTMLDivElement>(null);
-  const [downloading, setDownloading] = useState(false);
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
     documentTitle: `Payslip_${payslip.employeeName}_${payslip.month}`,
   });
-
-  const handleDownloadPDF = async () => {
-    if (!componentRef.current) return;
-    setDownloading(true);
-    try {
-      // Temporarily ensure the element is fully visible for the canvas capture
-      const element = componentRef.current;
-      
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff', // Force white background
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      let pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      let pdfFinalWidth = pdfWidth;
-      
-      // If the content is taller than an A4 page, scale it down to fit on one page
-      if (pdfHeight > pageHeight) {
-        pdfHeight = pageHeight - 20; // Leave a small margin
-        pdfFinalWidth = (canvas.width * pdfHeight) / canvas.height;
-      }
-      
-      // Center horizontally if it was scaled down
-      const xOffset = (pdfWidth - pdfFinalWidth) / 2;
-      
-      pdf.addImage(imgData, 'PNG', xOffset, 10, pdfFinalWidth, pdfHeight);
-      pdf.save(`Payslip_${payslip.employeeName}_${payslip.month}.pdf`);
-    } catch (error) {
-      console.error("Error generating PDF", error);
-    } finally {
-      setDownloading(false);
-    }
-  };
 
   const formatCurrency = (amount: number) => {
     return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -75,16 +27,13 @@ export default function PayslipViewModal({ payslip, company, onClose }: { paysli
           <div className="flex flex-row items-center justify-between">
             <DialogTitle>Payslip - {monthName}</DialogTitle>
             <div className="space-x-2">
-              <Button variant="outline" onClick={() => handlePrint()}>Print</Button>
-              <Button onClick={handleDownloadPDF} disabled={downloading}>
-                {downloading ? 'Generating PDF...' : 'Download PDF'}
-              </Button>
+              <Button onClick={() => handlePrint()}>Print / Save as PDF</Button>
             </div>
           </div>
           <Alert className="bg-blue-50 text-blue-800 border-blue-200">
             <Info className="h-4 w-4 text-blue-800" />
             <AlertDescription>
-              If the PDF does not download, it may be blocked by the preview window. Please open the app in a <strong>New Tab</strong> (using the icon in the top right) or use the <strong>Print</strong> button to save as PDF.
+              To save as a PDF, click the button above and select <strong>"Save as PDF"</strong> in the Destination dropdown of the print dialog.
             </AlertDescription>
           </Alert>
         </DialogHeader>
