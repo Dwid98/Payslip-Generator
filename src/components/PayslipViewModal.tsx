@@ -21,9 +21,15 @@ export default function PayslipViewModal({ payslip, company, onClose }: { paysli
     if (!componentRef.current) return;
     setDownloading(true);
     try {
-      const canvas = await html2canvas(componentRef.current, {
+      // Temporarily ensure the element is fully visible for the canvas capture
+      const element = componentRef.current;
+      
+      const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
+        backgroundColor: '#ffffff', // Force white background
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -34,9 +40,20 @@ export default function PayslipViewModal({ payslip, company, onClose }: { paysli
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      let pdfFinalWidth = pdfWidth;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // If the content is taller than an A4 page, scale it down to fit on one page
+      if (pdfHeight > pageHeight) {
+        pdfHeight = pageHeight - 20; // Leave a small margin
+        pdfFinalWidth = (canvas.width * pdfHeight) / canvas.height;
+      }
+      
+      // Center horizontally if it was scaled down
+      const xOffset = (pdfWidth - pdfFinalWidth) / 2;
+      
+      pdf.addImage(imgData, 'PNG', xOffset, 10, pdfFinalWidth, pdfHeight);
       pdf.save(`Payslip_${payslip.employeeName}_${payslip.month}.pdf`);
     } catch (error) {
       console.error("Error generating PDF", error);
