@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A staff member of the company (admin or payslip generator)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["company_admin", "payslip_generator"] },
+        "companyId": { "type": "string" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Company": {
+      "title": "Company",
+      "description": "A company that issues payslips",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" },
+        "logoBase64": { "type": "string" },
+        "joinCode": { "type": "string" },
+        "adminId": { "type": "string" }
+      },
+      "required": ["name", "joinCode", "adminId"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "An employee profile (not a user account)",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "name": { "type": "string" },
+        "empNo": { "type": "string" },
+        "epfNo": { "type": "string" },
+        "department": { "type": "string" },
+        "basicSalary": { "type": "number" },
+        "bankDetails": { "type": "string" },
+        "defaultAllowances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "amount": { "type": "number" }
+            }
+          }
+        },
+        "defaultDeductions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "amount": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["companyId", "name", "basicSalary"]
+    },
+    "Payslip": {
+      "title": "Payslip",
+      "description": "A generated payslip",
+      "type": "object",
+      "properties": {
+        "companyId": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "month": { "type": "string" },
+        "basicSalary": { "type": "number" },
+        "allowances": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "amount": { "type": "number" }
+            }
+          }
+        },
+        "deductions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "amount": { "type": "number" }
+            }
+          }
+        },
+        "epf8": { "type": "number" },
+        "epf12": { "type": "number" },
+        "etf3": { "type": "number" },
+        "paye": { "type": "number" },
+        "stampFee": { "type": "number" },
+        "netPay": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyId", "employeeId", "month", "basicSalary", "netPay"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Staff profiles"
+    },
+    "/companies/{companyId}": {
+      "schema": "Company",
+      "description": "Companies"
+    },
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Employee profiles"
+    },
+    "/payslips/{payslipId}": {
+      "schema": "Payslip",
+      "description": "Generated payslips"
+    }
+  }
+}

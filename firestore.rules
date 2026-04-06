@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isAuthenticated() && exists(userDoc) ? get(userDoc).data : null;
+    }
+
+    function userRole() {
+      let data = getUserData();
+      return data != null ? data.role : null;
+    }
+
+    function userCompanyId() {
+      let data = getUserData();
+      return data != null ? data.companyId : null;
+    }
+
+    function isCompanyAdmin() {
+      let role = userRole();
+      return role == 'company_admin' || role == 'admin';
+    }
+
+    function isStaff() {
+      let role = userRole();
+      return role == 'company_admin' || role == 'admin' || role == 'payslip_generator' || role == 'employee';
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || userCompanyId() == resource.data.companyId);
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    match /companies/{companyId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isCompanyAdmin() && userCompanyId() == companyId;
+    }
+
+    match /employees/{employeeId} {
+      allow read: if isStaff() && userCompanyId() == resource.data.companyId;
+      allow create: if isStaff() && userCompanyId() == request.resource.data.companyId;
+      allow update: if isStaff() && userCompanyId() == resource.data.companyId && userCompanyId() == request.resource.data.companyId;
+      allow delete: if isCompanyAdmin() && userCompanyId() == resource.data.companyId;
+    }
+
+    match /payslips/{payslipId} {
+      allow read: if isStaff() && userCompanyId() == resource.data.companyId;
+      allow create: if isStaff() && userCompanyId() == request.resource.data.companyId;
+      allow update: if isStaff() && userCompanyId() == resource.data.companyId && userCompanyId() == request.resource.data.companyId;
+      allow delete: if isCompanyAdmin() && userCompanyId() == resource.data.companyId;
+    }
+
+    match /debug_logs/{logId} {
+      allow read, write: if true;
+    }
+  }
+}
