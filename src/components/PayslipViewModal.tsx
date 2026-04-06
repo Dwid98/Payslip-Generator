@@ -1,13 +1,21 @@
 import { useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { useReactToPrint } from 'react-to-print';
 import { format, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 export default function PayslipViewModal({ payslip, company, onClose }: { payslip: any, company: any, onClose: () => void }) {
   const componentRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `Payslip_${payslip.employeeName}_${payslip.month}`,
+  });
 
   const handleDownloadPDF = async () => {
     if (!componentRef.current) return;
@@ -46,11 +54,22 @@ export default function PayslipViewModal({ payslip, company, onClose }: { paysli
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle>Payslip - {monthName}</DialogTitle>
-          <Button onClick={handleDownloadPDF} disabled={downloading}>
-            {downloading ? 'Generating PDF...' : 'Download PDF'}
-          </Button>
+        <DialogHeader className="flex flex-col space-y-4">
+          <div className="flex flex-row items-center justify-between">
+            <DialogTitle>Payslip - {monthName}</DialogTitle>
+            <div className="space-x-2">
+              <Button variant="outline" onClick={() => handlePrint()}>Print</Button>
+              <Button onClick={handleDownloadPDF} disabled={downloading}>
+                {downloading ? 'Generating PDF...' : 'Download PDF'}
+              </Button>
+            </div>
+          </div>
+          <Alert className="bg-blue-50 text-blue-800 border-blue-200">
+            <Info className="h-4 w-4 text-blue-800" />
+            <AlertDescription>
+              If the PDF does not download, it may be blocked by the preview window. Please open the app in a <strong>New Tab</strong> (using the icon in the top right) or use the <strong>Print</strong> button to save as PDF.
+            </AlertDescription>
+          </Alert>
         </DialogHeader>
         
         <div className="p-8 bg-white text-black font-mono text-sm" ref={componentRef}>
